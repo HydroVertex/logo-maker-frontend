@@ -1,45 +1,58 @@
-name: Deploy to GitHub Pages
+name: Deploy to Pages
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     steps:
-      # 1. 检出代码
-      - name: Checkout
-        uses: actions/checkout@v3
+      # 步骤1：检出代码
+      - name: Checkout repository
+        uses: actions/checkout@v4
         
-      # 2. 安装Node.js
-      - name: Setup Node
-        uses: actions/setup-node@v3
+      # 步骤2：设置Node环境
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: '20'
+          cache: 'npm'
           
-      # 3. 安装依赖并构建
-      - name: Install and Build
-        run: |
-          npm ci
-          npm run build
+      # 步骤3：安装依赖
+      - name: Install dependencies
+        run: npm ci
+        
+      # 步骤4：构建项目
+      - name: Build project
+        run: npm run build
+        env:
+          PUBLIC_URL: 'https://yourusername.github.io/logo-maker-pages'
           
-      # 4. 配置部署密钥
-      - name: Configure SSH
+      # 步骤5：配置SSH密钥
+      - name: Setup SSH Key
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.DEPLOY_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
+          echo "${{ secrets.DEPLOY_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan github.com >> ~/.ssh/known_hosts
           
-      # 5. 推送到Pages仓库
-      - name: Deploy to Pages
-        uses: peaceiris/actions-gh-pages@v3
+      # 步骤6：配置Git身份
+      - name: Configure Git
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@users.noreply.github.com"
+          
+      # 步骤7：部署到Pages仓库
+      - name: Deploy to Pages Repository
+        uses: peaceiris/actions-gh-pages@v4
         with:
           deploy_key: ${{ secrets.DEPLOY_KEY }}
-          external_repository: your_username/logo-maker-pages
-          publish_branch: gh-pages  # Pages服务使用的分支
-          publish_dir: ./dist       # 构建输出目录
-          keep_files: false         # 完全覆盖目标分支
+          external_repository: yourusername/logo-maker-pages
+          publish_branch: gh-pages
+          publish_dir: ./dist
+          force_orphan: true
+          keep_files: false
+          allow_empty_commit: false
